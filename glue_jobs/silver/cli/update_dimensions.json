@@ -1,0 +1,17 @@
+{
+  "Command": {
+    "Name": "glueetl",
+    "ScriptLocation": "s3://gpcorp-datalake/glue-scripts/silver/job_dimensions.py",
+    "PythonVersion": "3"
+  },
+  "DefaultArguments": {
+    "--load_type": "incremental",
+    "--enable-auto-scaling": "true",
+    "--enable-metrics": "true",
+    "--datalake-formats": "iceberg",
+    "--conf": "spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+    "--extra-py-files": "s3://gpcorp-datalake/glue-scripts/silver/config.py,s3://gpcorp-datalake/glue-scripts/silver/utils.py,s3://gpcorp-datalake/glue-scripts/silver/scd2.py,s3://gpcorp-datalake/glue-scripts/silver/iceberg_writer.py",
+    "--TempDir": "s3://gpcorp-datalake/glue-temp/"
+  },
+  "Role": "arn:aws:iam::892748149777:role/GlueServiceRole-gpcorp"
+}

@@ -1,0 +1,6 @@
+{
+  "Predicate": {
+    "Conditions": [{"JobName": "gpcorp-silver-dimensions", "State": "SUCCEEDED", "LogicalOperator": "EQUALS"}]
+  },
+  "Actions": [{"JobName": "gpcorp-silver-facts"}]
+}
