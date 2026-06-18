@@ -7,7 +7,7 @@ Execução: Glue 4.0, G.1X, 2 workers com auto-scaling.
 """
 import sys
 from awsglue.utils import getResolvedOptions
-from pyspark.sql.functions import col, to_date, lit
+from pyspark.sql.functions import col, to_date, lit, when, sha2
 
 from config import ENTITIES, CATALOG_DATABASE_SILVER
 from utils import (
@@ -18,13 +18,15 @@ from scd2 import apply_scd2
 from iceberg_writer import write_iceberg_merge
 
 
-def transform_business_partners(spark, cfg):
+def transform_business_partners(spark, cfg, load_type="all", load_date=None):
     """
     BusinessPartners (OCRD via Service Layer).
     Campos reais: CardCode, CardName, CardType, GroupCode, Phone1, Phone2,
     Cellular, EmailAddress, FederalTaxID, City, BillToState, SalesPersonCode, etc.
     """
-    df = read_bronze_json(spark, cfg["bronze_path"])
+    df = read_bronze_json(spark, cfg["bronze_path"], load_type, load_date)
+    if df is None:
+        return None
 
     df = df.select(
         col("CardCode").cast("string"),
@@ -62,8 +64,9 @@ def transform_business_partners(spark, cfg):
         col("FrozenFrom").cast("string"),
         col("FrozenTo").cast("string"),
         col("Block").cast("string"),
-        col("CreationDate").cast("string"),
+        col("CreateDate").cast("string"),
         col("UpdateDate").cast("string"),
+        col("FreeText").cast("string"),
         col("_source_file"),
     )
 
@@ -75,7 +78,7 @@ def transform_business_partners(spark, cfg):
     # Tipagem de datas
     df = (
         df
-        .withColumn("CreationDate", to_date(col("CreationDate")))
+        .withColumn("CreateDate", to_date(col("CreateDate")))
         .withColumn("UpdateDate", to_date(col("UpdateDate")))
         .withColumn("ValidFrom", to_date(col("ValidFrom")))
         .withColumn("ValidTo", to_date(col("ValidTo")))
@@ -83,8 +86,19 @@ def transform_business_partners(spark, cfg):
         .withColumn("FrozenTo", to_date(col("FrozenTo")))
     )
 
-    # Mascaramento PII (LGPD)
-    df = mask_pii(df, cfg["pii_columns"])
+    # Mascaramento PII (LGPD) — somente quando FederalTaxID preenchido (indica PF com CPF)
+    # EmailAddress NÃO mascarado (email corporativo PJ)
+    from pyspark.sql.functions import length
+    pii_cols = ["Phone1", "Phone2", "Cellular", "FederalTaxID"]
+    for column in pii_cols:
+        if column in df.columns:
+            df = df.withColumn(
+                column,
+                when(
+                    (col("FederalTaxID").isNotNull()) & (length(col("FederalTaxID")) > 0) & col(column).isNotNull(),
+                    sha2(col(column).cast("string"), 256)
+                ).otherwise(col(column))
+            )
 
     # Metadata
     df = add_silver_metadata(df)
@@ -96,13 +110,15 @@ def transform_business_partners(spark, cfg):
     return df
 
 
-def transform_items(spark, cfg):
+def transform_items(spark, cfg, load_type="all", load_date=None):
     """
     Items (OITM via Service Layer).
     Campos: ItemCode, ItemName, ForeignName, ItemsGroupCode, BarCode,
     QuantityOnStock, Valid, SalesUnit, PurchaseUnit, etc.
     """
-    df = read_bronze_json(spark, cfg["bronze_path"])
+    df = read_bronze_json(spark, cfg["bronze_path"], load_type, load_date)
+    if df is None:
+        return None
 
     df = df.select(
         col("ItemCode").cast("string"),
@@ -155,12 +171,14 @@ def transform_items(spark, cfg):
     return df
 
 
-def transform_item_groups(spark, cfg):
+def transform_item_groups(spark, cfg, load_type="all", load_date=None):
     """
     ItemGroups (OITB via Service Layer).
     Campos relevantes: Number, GroupName, campos contábeis (contas).
     """
-    df = read_bronze_json(spark, cfg["bronze_path"])
+    df = read_bronze_json(spark, cfg["bronze_path"], load_type, load_date)
+    if df is None:
+        return None
 
     df = df.select(
         col("Number").cast("int"),
@@ -184,12 +202,14 @@ def transform_item_groups(spark, cfg):
     return df
 
 
-def transform_sales_persons(spark, cfg):
+def transform_sales_persons(spark, cfg, load_type="all", load_date=None):
     """
     SalesPersons (OSLP via Service Layer).
     Campos: SalesEmployeeCode, SalesEmployeeName, Telephone, Mobile, Email, etc.
     """
-    df = read_bronze_json(spark, cfg["bronze_path"])
+    df = read_bronze_json(spark, cfg["bronze_path"], load_type, load_date)
+    if df is None:
+        return None
 
     df = df.select(
         col("SalesEmployeeCode").cast("int"),
@@ -237,10 +257,23 @@ def main():
     except Exception:
         entities_to_process = list(TRANSFORM_MAP.keys())
 
+    # Parâmetros de carga: load_type (full|incremental|all) e load_date (YYYY-MM-DD)
+    try:
+        load_type = getResolvedOptions(sys.argv, ["load_type"])["load_type"]
+    except Exception:
+        load_type = "all"
+
+    try:
+        load_date = getResolvedOptions(sys.argv, ["load_date"])["load_date"]
+    except Exception:
+        load_date = None
+
     spark = get_spark_session(args["JOB_NAME"])
 
     # Garante database
     spark.sql(f"CREATE DATABASE IF NOT EXISTS glue_catalog.{CATALOG_DATABASE_SILVER}")
+
+    print(f"[CONFIG] load_type={load_type}, load_date={load_date}")
 
     for entity_name in entities_to_process:
         entity_name = entity_name.strip()
@@ -256,7 +289,10 @@ def main():
         transform_fn = TRANSFORM_MAP[entity_name]
 
         try:
-            df = transform_fn(spark, cfg)
+            df = transform_fn(spark, cfg, load_type, load_date)
+            if df is None:
+                print(f"[SKIP] {entity_name}: sem dados incrementais disponíveis.")
+                continue
             record_count = df.count()
             print(f"[INFO] {record_count} registros após transformação")
 

@@ -4,9 +4,9 @@ Otimizado para custo: Glue 3.0+ com auto-scaling, formato Iceberg, particionamen
 """
 
 # S3 paths
-S3_BUCKET = "gpcorp-lakehouse-poc"
-BRONZE_PREFIX = f"s3://{S3_BUCKET}/bronze"
-SILVER_PREFIX = f"s3://{S3_BUCKET}/silver"
+S3_BUCKET = "gpcorp-datalake"
+BRONZE_PREFIX = f"s3://{S3_BUCKET}/Bronze"
+SILVER_PREFIX = f"s3://{S3_BUCKET}/Silver"
 
 # Glue Catalog
 CATALOG_DATABASE_SILVER = "gpcorp_silver"
@@ -23,7 +23,7 @@ ENTITIES = {
         "primary_key": ["CardCode"],
         "partition_by": [],  # dimensão pequena, sem partição
         "scd_type": 2,
-        "pii_columns": ["Phone1", "Phone2", "Cellular", "EmailAddress", "FederalTaxID"],
+        "pii_columns": ["Phone1", "Phone2", "Cellular", "FederalTaxID"],
     },
     "Items": {
         "bronze_path": f"{BRONZE_PREFIX}/Items/",
@@ -52,32 +52,32 @@ ENTITIES = {
     "Invoices": {
         "bronze_path": f"{BRONZE_PREFIX}/Invoices/",
         "silver_table": "invoices",
-        "primary_key": ["DocEntry"],
-        "partition_by": ["year", "month"],
+        "primary_key": ["DocEntry", "LineNum"],
+        "partition_by": ["year", "month", "day"],
         "scd_type": 1,  # fato — append/overwrite
         "pii_columns": [],
     },
     "Orders": {
         "bronze_path": f"{BRONZE_PREFIX}/Orders/",
         "silver_table": "orders",
-        "primary_key": ["DocEntry"],
-        "partition_by": ["year", "month"],
+        "primary_key": ["DocEntry", "LineNum"],
+        "partition_by": ["year", "month", "day"],
         "scd_type": 1,
         "pii_columns": [],
     },
     "Quotations": {
         "bronze_path": f"{BRONZE_PREFIX}/Quotations/",
         "silver_table": "quotations",
-        "primary_key": ["DocEntry"],
-        "partition_by": ["year", "month"],
+        "primary_key": ["DocEntry", "LineNum"],
+        "partition_by": ["year", "month", "day"],
         "scd_type": 1,
         "pii_columns": [],
     },
     "InventoryGenEntries": {
         "bronze_path": f"{BRONZE_PREFIX}/InventoryGenEntries/",
         "silver_table": "inventory_gen_entries",
-        "primary_key": ["DocEntry"],
-        "partition_by": ["year", "month"],
+        "primary_key": ["DocEntry", "LineNum"],
+        "partition_by": ["year", "month", "day"],
         "scd_type": 1,
         "pii_columns": [],
     },

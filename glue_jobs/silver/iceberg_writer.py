@@ -15,10 +15,23 @@ def write_iceberg_merge(spark: SparkSession, df: DataFrame, table_name: str,
     """
     full_table = f"{ICEBERG_CATALOG}.{CATALOG_DATABASE_SILVER}.{table_name}"
 
+    # Remove colunas void/NullType (Iceberg não aceita)
+    df = _fix_null_types(df)
+
     if _table_exists(spark, full_table):
         _merge_into(spark, df, full_table, primary_key)
     else:
         _create_table(spark, df, full_table, partition_by)
+
+
+def _fix_null_types(df: DataFrame) -> DataFrame:
+    """Converte colunas NullType (void) para StringType — Iceberg não suporta void."""
+    from pyspark.sql.types import NullType
+    from pyspark.sql.functions import lit
+    for field in df.schema.fields:
+        if isinstance(field.dataType, NullType):
+            df = df.withColumn(field.name, lit(None).cast("string"))
+    return df
 
 
 def _table_exists(spark: SparkSession, full_table: str) -> bool:
@@ -32,16 +45,33 @@ def _table_exists(spark: SparkSession, full_table: str) -> bool:
 
 def _create_table(spark: SparkSession, df: DataFrame, full_table: str, partition_by: list = None):
     """Cria tabela Iceberg pela primeira vez."""
-    writer = df.writeTo(full_table).using("iceberg")
+    from pyspark.sql.types import NullType
+    from pyspark.sql.functions import lit
+
+    # Fix NullType columns
+    for field in df.schema.fields:
+        if isinstance(field.dataType, NullType):
+            df = df.withColumn(field.name, lit(None).cast("string"))
+
+    count = df.count()
+    print(f"[WRITE] Criando tabela Iceberg {full_table} com {count} registros")
 
     if partition_by:
-        # Iceberg partition spec
-        from pyspark.sql.functions import col
-        writer = writer.partitionedBy(*partition_by)
+        # Iceberg exige registros clusterizados por partição ao escrever.
+        # Sem isso: "records violate writer assumption that records are clustered by partition".
+        # sortWithinPartitions + fanout writer resolve.
+        df = df.sortWithinPartitions(*partition_by)
+        writer = (
+            df.writeTo(full_table)
+            .using("iceberg")
+            .partitionedBy(*partition_by)
+            .tableProperty("write.spark.fanout.enabled", "true")
+        )
+    else:
+        writer = df.writeTo(full_table).using("iceberg")
 
-    writer.createOrReplace()
-    count = df.count()
-    print(f"[WRITE] Tabela {full_table} criada com {count} registros.")
+    writer.create()
+    print(f"[WRITE] Tabela {full_table} criada com sucesso.")
 
 
 def _merge_into(spark: SparkSession, df: DataFrame, full_table: str, primary_key: list):

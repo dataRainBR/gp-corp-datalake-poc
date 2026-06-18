@@ -22,13 +22,13 @@ from utils import (
 from iceberg_writer import write_iceberg_merge
 
 
-def transform_invoices(spark, cfg):
+def transform_invoices(spark, cfg, load_type="all", load_date=None):
     """
     Invoices (OINV + INV1 via Service Layer).
     Desnormaliza DocumentLines — cada linha vira um registro.
     PK final: DocEntry + LineNum
     """
-    df = read_bronze_json(spark, cfg["bronze_path"])
+    df = read_bronze_json(spark, cfg["bronze_path"], load_type, load_date)
 
     # Explode DocumentLines
     df_exploded = df.select(
@@ -57,6 +57,8 @@ def transform_invoices(spark, cfg):
         col("UpdateDate").cast("string"),
         col("Comments").cast("string"),
         col("Reference1").cast("string"),
+        col("BPL_IDAssignedToInvoice").cast("int").alias("BranchId"),
+        col("NumberOfInstallments").cast("int"),
         col("_source_file"),
         # Lines
         explode(col("DocumentLines")).alias("line"),
@@ -70,7 +72,7 @@ def transform_invoices(spark, cfg):
         "DiscountPercent", "DocCurrency", "DocRate", "SalesPersonCode",
         "DocumentStatus", "Cancelled", "PaymentGroupCode",
         "TransportationCode", "Series", "CreationDate", "UpdateDate",
-        "Comments", "Reference1", "_source_file",
+        "Comments", "Reference1", "BranchId", "NumberOfInstallments", "_source_file",
         # Line
         col("line.LineNum").cast("int").alias("LineNum"),
         col("line.ItemCode").cast("string").alias("ItemCode"),
@@ -87,6 +89,14 @@ def transform_invoices(spark, cfg):
         col("line.ShipDate").cast("string").alias("LineShipDate"),
         col("line.Currency").cast("string").alias("LineCurrency"),
         col("line.BarCode").cast("string").alias("BarCode"),
+        col("line.GrossProfit").cast("double").alias("GrossProfit"),
+        col("line.CFOPCode").cast("string").alias("CFOPCode"),
+        col("line.BaseEntry").cast("int").alias("BaseEntry"),
+        col("line.BaseType").cast("int").alias("BaseType"),
+        col("line.LineStatus").cast("string").alias("LineStatus"),
+        col("line.FreeOfChargeBP").cast("string").alias("FreeOfChargeBP"),
+        col("line.GrossBuyPrice").cast("double").alias("GrossBuyPrice"),
+        col("line.ActualDeliveryDate").cast("string").alias("ActualDeliveryDate"),
     )
 
     # Limpeza e dedup
@@ -115,12 +125,14 @@ def transform_invoices(spark, cfg):
     return result
 
 
-def transform_orders(spark, cfg):
+def transform_orders(spark, cfg, load_type="all", load_date=None):
     """
     Orders (ORDR + RDR1 via Service Layer).
     Mesma estrutura de Invoices (DocumentLines aninhado).
     """
-    df = read_bronze_json(spark, cfg["bronze_path"])
+    df = read_bronze_json(spark, cfg["bronze_path"], load_type, load_date)
+    if df is None:
+        return None
 
     df_exploded = df.select(
         col("DocEntry").cast("int"),
@@ -147,6 +159,8 @@ def transform_orders(spark, cfg):
         col("UpdateDate").cast("string"),
         col("Comments").cast("string"),
         col("Reference1").cast("string"),
+        col("BPL_IDAssignedToInvoice").cast("int").alias("BranchId"),
+        col("NumberOfInstallments").cast("int"),
         col("_source_file"),
         explode(col("DocumentLines")).alias("line"),
     )
@@ -157,7 +171,7 @@ def transform_orders(spark, cfg):
         "DiscountPercent", "DocCurrency", "DocRate", "SalesPersonCode",
         "DocumentStatus", "Cancelled", "PaymentGroupCode",
         "TransportationCode", "Series", "CreationDate", "UpdateDate",
-        "Comments", "Reference1", "_source_file",
+        "Comments", "Reference1", "BranchId", "NumberOfInstallments", "_source_file",
         col("line.LineNum").cast("int").alias("LineNum"),
         col("line.ItemCode").cast("string").alias("ItemCode"),
         col("line.ItemDescription").cast("string").alias("ItemDescription"),
@@ -173,6 +187,14 @@ def transform_orders(spark, cfg):
         col("line.ShipDate").cast("string").alias("LineShipDate"),
         col("line.Currency").cast("string").alias("LineCurrency"),
         col("line.BarCode").cast("string").alias("BarCode"),
+        col("line.GrossProfit").cast("double").alias("GrossProfit"),
+        col("line.CFOPCode").cast("string").alias("CFOPCode"),
+        col("line.BaseEntry").cast("int").alias("BaseEntry"),
+        col("line.BaseType").cast("int").alias("BaseType"),
+        col("line.LineStatus").cast("string").alias("LineStatus"),
+        col("line.FreeOfChargeBP").cast("string").alias("FreeOfChargeBP"),
+        col("line.GrossBuyPrice").cast("double").alias("GrossBuyPrice"),
+        col("line.ActualDeliveryDate").cast("string").alias("ActualDeliveryDate"),
     )
 
     result = clean_strings(result)
@@ -196,13 +218,15 @@ def transform_orders(spark, cfg):
     return result
 
 
-def transform_quotations(spark, cfg):
+def transform_quotations(spark, cfg, load_type="all", load_date=None):
     """
     Quotations (OQUT + QUT1 via Service Layer).
     Base para CU-02: win-rate, análise preditiva.
     DocumentStatus: 'bost_Open' / 'bost_Close' — importante para conversão.
     """
-    df = read_bronze_json(spark, cfg["bronze_path"])
+    df = read_bronze_json(spark, cfg["bronze_path"], load_type, load_date)
+    if df is None:
+        return None
 
     df_exploded = df.select(
         col("DocEntry").cast("int"),
@@ -245,6 +269,14 @@ def transform_quotations(spark, cfg):
         col("line.DiscountPercent").cast("double").alias("LineDiscountPercent"),
         col("line.WarehouseCode").cast("string").alias("WarehouseCode"),
         col("line.Currency").cast("string").alias("LineCurrency"),
+        col("line.GrossProfit").cast("double").alias("GrossProfit"),
+        col("line.CFOPCode").cast("string").alias("CFOPCode"),
+        col("line.BaseEntry").cast("int").alias("BaseEntry"),
+        col("line.BaseType").cast("int").alias("BaseType"),
+        col("line.LineStatus").cast("string").alias("LineStatus"),
+        col("line.FreeOfChargeBP").cast("string").alias("FreeOfChargeBP"),
+        col("line.GrossBuyPrice").cast("double").alias("GrossBuyPrice"),
+        col("line.ActualDeliveryDate").cast("string").alias("ActualDeliveryDate"),
     )
 
     result = clean_strings(result)
@@ -267,12 +299,14 @@ def transform_quotations(spark, cfg):
     return result
 
 
-def transform_inventory_gen_entries(spark, cfg):
+def transform_inventory_gen_entries(spark, cfg, load_type="all", load_date=None):
     """
     InventoryGenEntries (OIGN via Service Layer).
     Entradas de mercadoria em estoque.
     """
-    df = read_bronze_json(spark, cfg["bronze_path"])
+    df = read_bronze_json(spark, cfg["bronze_path"], load_type, load_date)
+    if df is None:
+        return None
 
     df_exploded = df.select(
         col("DocEntry").cast("int"),
@@ -303,6 +337,14 @@ def transform_inventory_gen_entries(spark, cfg):
         col("line.WarehouseCode").cast("string").alias("WarehouseCode"),
         col("line.AccountCode").cast("string").alias("AccountCode"),
         col("line.CostingCode").cast("string").alias("CostCenter"),
+        col("line.GrossProfit").cast("double").alias("GrossProfit"),
+        col("line.CFOPCode").cast("string").alias("CFOPCode"),
+        col("line.BaseEntry").cast("int").alias("BaseEntry"),
+        col("line.BaseType").cast("int").alias("BaseType"),
+        col("line.LineStatus").cast("string").alias("LineStatus"),
+        col("line.FreeOfChargeBP").cast("string").alias("FreeOfChargeBP"),
+        col("line.GrossBuyPrice").cast("double").alias("GrossBuyPrice"),
+        col("line.ActualDeliveryDate").cast("string").alias("ActualDeliveryDate"),
     )
 
     result = clean_strings(result)
@@ -341,8 +383,21 @@ def main():
     except Exception:
         entities_to_process = list(TRANSFORM_MAP.keys())
 
+    # Parâmetros de carga: load_type (full|incremental|all) e load_date (YYYY-MM-DD)
+    try:
+        load_type = getResolvedOptions(sys.argv, ["load_type"])["load_type"]
+    except Exception:
+        load_type = "all"
+
+    try:
+        load_date = getResolvedOptions(sys.argv, ["load_date"])["load_date"]
+    except Exception:
+        load_date = None
+
     spark = get_spark_session(args["JOB_NAME"])
     spark.sql(f"CREATE DATABASE IF NOT EXISTS glue_catalog.{CATALOG_DATABASE_SILVER}")
+
+    print(f"[CONFIG] load_type={load_type}, load_date={load_date}")
 
     for entity_name in entities_to_process:
         entity_name = entity_name.strip()
@@ -358,7 +413,10 @@ def main():
         transform_fn = TRANSFORM_MAP[entity_name]
 
         try:
-            df = transform_fn(spark, cfg)
+            df = transform_fn(spark, cfg, load_type, load_date)
+            if df is None:
+                print(f"[SKIP] {entity_name}: sem dados incrementais disponíveis.")
+                continue
             record_count = df.count()
             print(f"[INFO] {record_count} registros (linhas de documento) após transformação")
 

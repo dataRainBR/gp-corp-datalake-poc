@@ -72,7 +72,7 @@ resource "aws_glue_job" "silver_dimensions" {
   }
 
   tags = {
-    Project     = "gpcorp-lakehouse-poc"
+    Project     = "gpcorp-datalake"
     Layer       = "silver"
     CostCenter  = "data-engineering"
   }
@@ -86,7 +86,7 @@ resource "aws_glue_job" "silver_facts" {
 
   glue_version      = "4.0"
   worker_type       = "G.1X"
-  number_of_workers = 2
+  number_of_workers = 5
   timeout           = 120
   max_retries       = 1
 
@@ -109,7 +109,7 @@ resource "aws_glue_job" "silver_facts" {
   }
 
   tags = {
-    Project     = "gpcorp-lakehouse-poc"
+    Project     = "gpcorp-datalake"
     Layer       = "silver"
     CostCenter  = "data-engineering"
   }
@@ -145,7 +145,7 @@ resource "aws_glue_job" "silver_quality" {
   }
 
   tags = {
-    Project     = "gpcorp-lakehouse-poc"
+    Project     = "gpcorp-datalake"
     Layer       = "silver"
     CostCenter  = "data-engineering"
   }
@@ -158,7 +158,7 @@ resource "aws_glue_workflow" "silver_pipeline" {
   description = "Pipeline Bronze → Silver: Dimensões → Fatos → Quality Checks"
 
   tags = {
-    Project = "gpcorp-lakehouse-poc"
+    Project = "gpcorp-datalake"
   }
 }
 
@@ -174,7 +174,7 @@ resource "aws_glue_trigger" "silver_start" {
   }
 
   tags = {
-    Project = "gpcorp-lakehouse-poc"
+    Project = "gpcorp-datalake"
   }
 }
 

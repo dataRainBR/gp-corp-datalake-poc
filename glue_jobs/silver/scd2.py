@@ -24,10 +24,11 @@ def compute_row_hash(df: DataFrame, exclude_cols: list = None) -> DataFrame:
     default_exclude = {
         "_silver_loaded_at", "_silver_load_date", "_sk",
         "_row_hash", "_valid_from", "_valid_to", "_is_current",
-        "_source_file", "year", "month", "odata.etag"
+        "_source_file", "year", "month", "day"
     }
     exclude = default_exclude | set(exclude_cols or [])
-    hash_cols = sorted([c for c in df.columns if c not in exclude])
+    # Exclui colunas com ponto no nome (odata.etag) e colunas de controle
+    hash_cols = sorted([c for c in df.columns if c not in exclude and "odata" not in c.lower()])
 
     return df.withColumn(
         "_row_hash",
@@ -58,7 +59,12 @@ def apply_scd2(spark: SparkSession, incoming_df: DataFrame, table_name: str, pri
             .withColumn("_valid_to", lit(None).cast(TimestampType()))
             .withColumn("_is_current", lit(True).cast(BooleanType()))
         )
-        result.writeTo(full_table).using("iceberg").createOrReplace()
+        # Fix NullType columns
+        from pyspark.sql.types import NullType
+        for field in result.schema.fields:
+            if isinstance(field.dataType, NullType):
+                result = result.withColumn(field.name, lit(None).cast("string"))
+        result.write.format("iceberg").mode("overwrite").saveAsTable(full_table)
         print(f"[SCD2] Tabela {full_table} criada com {result.count()} registros (primeira carga).")
         return
 
