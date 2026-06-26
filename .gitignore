@@ -60,3 +60,6 @@ data/output/
 
 # Cache
 .cache/
+
+# dbt packages (baixados via dbt deps, não devem ser versionados)
+dbt_packages/
