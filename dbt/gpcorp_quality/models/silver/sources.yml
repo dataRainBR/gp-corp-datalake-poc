@@ -1,0 +1,128 @@
+version: 2
+
+sources:
+  - name: gpcorp_silver
+    description: "Camada Silver — tabelas Iceberg escritas pelo pipeline PySpark/Glue"
+    database: awsdatacatalog
+    schema: gpcorp_silver
+
+    # Freshness: dados devem ser atualizados diariamente
+    freshness:
+      warn_after: {count: 26, period: hour}
+      error_after: {count: 48, period: hour}
+    loaded_at_field: _silver_loaded_at
+
+    tables:
+      # ─────────────── DIMENSÕES ───────────────
+      - name: business_partners
+        description: "Clientes/fornecedores (OCRD) — SCD2"
+        columns:
+          - name: CardCode
+            description: "Código único do parceiro"
+            tests:
+              - not_null:
+                  config:
+                    where: "_is_current = true"
+              - unique:
+                  config:
+                    where: "_is_current = true"
+          - name: CardName
+            tests:
+              - not_null:
+                  config:
+                    where: "_is_current = true"
+          - name: CardType
+            tests:
+              - accepted_values:
+                  values: ['cCustomer', 'cSupplier', 'cLead']
+                  config:
+                    where: "_is_current = true"
+          - name: CreditLimit
+            tests:
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  config:
+                    where: "_is_current = true"
+
+      - name: items
+        description: "Produtos (OITM) — SCD2"
+        columns:
+          - name: ItemCode
+            tests:
+              - not_null:
+                  config:
+                    where: "_is_current = true"
+              - unique:
+                  config:
+                    where: "_is_current = true"
+
+      - name: sales_persons
+        description: "Vendedores (OSLP) — SCD2"
+        columns:
+          - name: SalesEmployeeCode
+            tests:
+              - not_null:
+                  config:
+                    where: "_is_current = true"
+              - unique:
+                  config:
+                    where: "_is_current = true"
+
+      - name: item_groups
+        description: "Grupos de produto (OITB)"
+        columns:
+          - name: Number
+            tests:
+              - not_null
+              - unique
+
+      # ─────────────── FATOS ───────────────
+      - name: quotations
+        description: "Cotações (OQUT+QUT1) — base CU-02 win-rate"
+        columns:
+          - name: DocEntry
+            tests:
+              - not_null
+          - name: LineNum
+            tests:
+              - not_null
+          - name: DocumentStatus
+            tests:
+              - accepted_values:
+                  values: ['bost_Open', 'bost_Close']
+          - name: CardCode
+            description: "FK para business_partners"
+            tests:
+              - relationships:
+                  to: source('gpcorp_silver', 'business_partners')
+                  field: CardCode
+                  config:
+                    where: "CardCode IS NOT NULL"
+                    severity: warn
+
+      - name: invoices
+        description: "Notas fiscais (OINV+INV1) — fato principal"
+        columns:
+          - name: DocEntry
+            tests:
+              - not_null
+          - name: LineNum
+            tests:
+              - not_null
+
+      - name: orders
+        description: "Pedidos (ORDR+RDR1)"
+        columns:
+          - name: DocEntry
+            tests:
+              - not_null
+          - name: LineNum
+            tests:
+              - not_null
+
+      - name: inventory_gen_entries
+        description: "Entradas de estoque (OIGN)"
+        columns:
+          - name: DocEntry
+            tests:
+              - not_null

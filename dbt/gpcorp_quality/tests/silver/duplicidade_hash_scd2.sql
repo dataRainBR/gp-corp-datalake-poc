@@ -1,0 +1,8 @@
+-- Teste: _row_hash não deve repetir para registros correntes (mesmo CardCode)
+-- Se repetir, indica que dois registros idênticos foram marcados como correntes
+
+SELECT CardCode, _row_hash, COUNT(*) as qtd
+FROM {{ source('gpcorp_silver', 'business_partners') }}
+WHERE _is_current = true
+GROUP BY CardCode, _row_hash
+HAVING COUNT(*) > 1

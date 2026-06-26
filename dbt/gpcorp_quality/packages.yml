@@ -1,0 +1,8 @@
+packages:
+  # Testes utilitários (accepted_range, etc.)
+  - package: dbt-labs/dbt_utils
+    version: [">=1.1.0", "<2.0.0"]
+
+  # Elementary: observabilidade de dados — persiste histórico de testes
+  - package: elementary-data/elementary
+    version: [">=0.15.0", "<0.16.0"]

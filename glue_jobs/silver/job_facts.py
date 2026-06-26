@@ -58,6 +58,7 @@ def transform_invoices(spark, cfg, load_type="all", load_date=None):
         col("Comments").cast("string"),
         col("Reference1").cast("string"),
         col("BPL_IDAssignedToInvoice").cast("int").alias("BranchId"),
+        col("BPLName").cast("string").alias("NomeFilial"),
         col("NumberOfInstallments").cast("int"),
         col("_source_file"),
         # Lines
@@ -72,7 +73,7 @@ def transform_invoices(spark, cfg, load_type="all", load_date=None):
         "DiscountPercent", "DocCurrency", "DocRate", "SalesPersonCode",
         "DocumentStatus", "Cancelled", "PaymentGroupCode",
         "TransportationCode", "Series", "CreationDate", "UpdateDate",
-        "Comments", "Reference1", "BranchId", "NumberOfInstallments", "_source_file",
+        "Comments", "Reference1", "BranchId", "NomeFilial", "NumberOfInstallments", "_source_file",
         # Line
         col("line.LineNum").cast("int").alias("LineNum"),
         col("line.ItemCode").cast("string").alias("ItemCode"),
@@ -96,6 +97,7 @@ def transform_invoices(spark, cfg, load_type="all", load_date=None):
         col("line.LineStatus").cast("string").alias("LineStatus"),
         col("line.FreeOfChargeBP").cast("string").alias("FreeOfChargeBP"),
         col("line.GrossBuyPrice").cast("double").alias("GrossBuyPrice"),
+        col("line.GrossTotal").cast("double").alias("ValorTotalLinha"),
         col("line.ActualDeliveryDate").cast("string").alias("ActualDeliveryDate"),
     )
 
