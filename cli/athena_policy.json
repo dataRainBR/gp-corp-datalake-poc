@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "athena:StartQueryExecution",
+        "athena:GetQueryExecution",
+        "athena:GetQueryResults",
+        "athena:StopQueryExecution",
+        "athena:GetWorkGroup"
+      ],
+      "Resource": [
+        "arn:aws:athena:us-east-1:892748149777:workgroup/primary",
+        "arn:aws:athena:us-east-1:892748149777:workgroup/gpcorp-analytics"
+      ]
+    }
+  ]
+}

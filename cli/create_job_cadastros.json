@@ -1,0 +1,29 @@
+{
+  "Name": "gpcorp-gold-cadastros",
+  "Role": "arn:aws:iam::892748149777:role/GlueServiceRole-gpcorp",
+  "Command": {
+    "Name": "glueetl",
+    "ScriptLocation": "s3://gpcorp-datalake/glue-scripts/gold/job_cadastros.py",
+    "PythonVersion": "3"
+  },
+  "GlueVersion": "4.0",
+  "WorkerType": "G.1X",
+  "NumberOfWorkers": 2,
+  "Timeout": 30,
+  "MaxRetries": 1,
+  "DefaultArguments": {
+    "--enable-auto-scaling": "true",
+    "--enable-continuous-cloudwatch-log": "false",
+    "--enable-metrics": "true",
+    "--datalake-formats": "iceberg",
+    "--conf": "spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+    "--extra-py-files": "s3://gpcorp-datalake/glue-scripts/gold/config.py",
+    "--TempDir": "s3://gpcorp-datalake/glue-temp/",
+    "--job-bookmark-option": "job-bookmark-disable"
+  },
+  "Tags": {
+    "Project": "gpcorp-datalake",
+    "Layer": "gold",
+    "CostCenter": "data-engineering"
+  }
+}

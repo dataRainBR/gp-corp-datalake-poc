@@ -85,6 +85,7 @@ def build_vendas_detalhada(spark, invoices, vendedores, items, item_groups):
             col("linestatus").alias("status_linha"),
             col("branchid").alias("cod_filial_empresa"),
             col("numberofinstallments").alias("num_parcelas"),
+            col("documentadditionalexpenses").alias("despesas_adicionais"),
         )
     )
 
@@ -97,11 +98,12 @@ def build_vendas_detalhada(spark, invoices, vendedores, items, item_groups):
         on="cod_vendedor", how="left"
     )
 
-    # Enriquecer com grupo do item
+    # Enriquecer com grupo do item + marca
     df = df.join(
         items.select(
             col("itemcode").alias("cod_item"),
             col("itemsgroupcode").alias("cod_grupo_item"),
+            col("marca"),
         ),
         on="cod_item", how="left"
     )

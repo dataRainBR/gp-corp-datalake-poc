@@ -1,7 +1,6 @@
--- Teste: SalesPersonCode não deve ser -1 nas fatos (sentinela removido na Silver)
--- Se retornar registros, o filtro de negativos falhou
-
+-- Teste: SalesPersonCode não deve ser negativo em quotations
+-- Exceção: -1 é sentinela válido do SAP B1 para "sem vendedor atribuído"
 SELECT DocEntry, LineNum, SalesPersonCode
 FROM {{ source('gpcorp_silver', 'quotations') }}
-WHERE SalesPersonCode < 0
+WHERE SalesPersonCode < -1
 LIMIT 10

@@ -1,0 +1,24 @@
+{
+  "Name": "gpcorp-gold-quality-checks",
+  "Role": "arn:aws:iam::892748149777:role/GlueServiceRole-gpcorp",
+  "Command": {
+    "Name": "pythonshell",
+    "ScriptLocation": "s3://gpcorp-datalake/glue-scripts/dbt/run_dbt_tests.py",
+    "PythonVersion": "3.9"
+  },
+  "MaxCapacity": 0.0625,
+  "Timeout": 30,
+  "MaxRetries": 0,
+  "GlueVersion": "3.0",
+  "DefaultArguments": {
+    "--additional-python-modules": "dbt-athena-community==1.8.*,elementary-data==0.15.*",
+    "--dbt_project_s3": "s3://gpcorp-datalake/dbt/gpcorp_quality/",
+    "--test_selector": "source:gpcorp_gold_vendas+ source:gpcorp_gold_cotacoes+ source:gpcorp_gold_cadastros+ source:gpcorp_gold_estoque+",
+    "--TempDir": "s3://gpcorp-datalake/glue-temp/"
+  },
+  "Tags": {
+    "Project": "gpcorp-datalake",
+    "Layer": "gold",
+    "CostCenter": "data-engineering"
+  }
+}

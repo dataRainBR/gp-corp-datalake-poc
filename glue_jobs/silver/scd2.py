@@ -117,6 +117,21 @@ def apply_scd2(spark: SparkSession, incoming_df: DataFrame, table_name: str, pri
     insert_count = to_insert.count()
 
     if insert_count > 0:
+        # Schema evolution: adiciona colunas novas se necessário
+        existing_cols = set(spark.table(full_table).columns)
+        new_cols = [f for f in to_insert.schema.fields if f.name not in existing_cols]
+        if new_cols:
+            for field in new_cols:
+                col_type = field.dataType.simpleString()
+                try:
+                    spark.sql(f"ALTER TABLE {full_table} ADD COLUMN `{field.name}` {col_type}")
+                    print(f"[SCHEMA] Coluna `{field.name}` ({col_type}) adicionada em {table_name}")
+                except Exception as e:
+                    if "already exists" in str(e):
+                        pass  # Coluna já existe — OK
+                    else:
+                        print(f"[WARN] ALTER TABLE falhou para {field.name}: {e}")
+
         to_insert.writeTo(full_table).append()
         print(f"[SCD2] {insert_count} registros inseridos em {table_name} "
               f"({new_records.count()} novos, {changed_count} atualizados).")

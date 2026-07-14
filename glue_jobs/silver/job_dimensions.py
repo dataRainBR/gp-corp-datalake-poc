@@ -149,6 +149,7 @@ def transform_items(spark, cfg, load_type="all", load_date=None):
         col("CommissionGroup").cast("int"),
         col("TreeType").cast("string"),
         col("AssetItem").cast("string"),
+        col("U_SX_Marca").cast("string").alias("marca"),
         col("_source_file"),
     )
 

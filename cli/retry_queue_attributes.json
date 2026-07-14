@@ -1,0 +1,3 @@
+{
+  "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:892748149777:gpcorp-extraction-dlq\",\"maxReceiveCount\":\"3\"}"
+}

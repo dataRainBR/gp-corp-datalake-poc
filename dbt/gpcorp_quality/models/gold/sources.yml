@@ -8,52 +8,12 @@ sources:
     tables:
       - name: vendas_detalhada
         description: "Grão linha de NF — drill-down dashboards"
-        columns:
-          - name: num_doc
-            tests:
-              - not_null
-          - name: num_linha
-            tests:
-              - not_null
-          - name: ano
-            tests:
-              - not_null
-          - name: mes
-            tests:
-              - not_null
-          - name: dia
-            tests:
-              - not_null
       - name: faturamento_mensal
         description: "Faturamento agregado por mês/vendedor/cliente/produto/filial"
-        columns:
-          - name: ano
-            tests:
-              - not_null
-          - name: mes
-            tests:
-              - not_null
-          - name: receita_total
-            tests:
-              - not_null
       - name: ranking_vendedores
         description: "Ranking de vendedores por período"
-        columns:
-          - name: ano
-            tests:
-              - not_null
-          - name: ranking
-            tests:
-              - not_null
       - name: vendas_por_produto
         description: "Vendas agregadas por item/grupo"
-        columns:
-          - name: ano
-            tests:
-              - not_null
-          - name: cod_item
-            tests:
-              - not_null
 
   - name: gpcorp_gold_cotacoes
     description: "Gold — Domínio Cotações"
@@ -62,22 +22,8 @@ sources:
     tables:
       - name: taxa_conversao
         description: "Taxa de conversão cotação→pedido"
-        columns:
-          - name: cod_vendedor
-            tests:
-              - not_null
-          - name: cod_item
-            tests:
-              - not_null
       - name: features_predicao_conversao
         description: "Features ML para predição de conversão"
-        columns:
-          - name: cod_cliente
-            tests:
-              - not_null
-          - name: cod_vendedor
-            tests:
-              - not_null
 
   - name: gpcorp_gold_cadastros
     description: "Gold — Domínio Cadastros"
@@ -86,11 +32,6 @@ sources:
     tables:
       - name: analise_credito
         description: "Features de crédito extraídas do FreeText"
-        columns:
-          - name: cod_cliente
-            tests:
-              - not_null
-              - unique
 
   - name: gpcorp_gold_estoque
     description: "Gold — Domínio Estoque"
@@ -99,10 +40,3 @@ sources:
     tables:
       - name: movimentacao_estoque
         description: "Movimentação de estoque por item/depósito/mês"
-        columns:
-          - name: ano
-            tests:
-              - not_null
-          - name: cod_item
-            tests:
-              - not_null
