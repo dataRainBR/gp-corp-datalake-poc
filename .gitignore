@@ -60,3 +60,25 @@ data/output/
 
 # Cache
 .cache/
+
+# dbt packages (baixados via dbt deps, não devem ser versionados)
+dbt_packages/
+
+# Lambda ZIPs (gerados no deploy, não versionados)
+glue_jobs/bronze/*.zip
+glue_jobs/silver/*.zip
+
+# dbt build artifacts e logs
+dbt/gpcorp_quality/target/
+dbt/gpcorp_quality/logs/
+dbt/gpcorp_quality/.user.yml
+
+# Terraform state (sensível — usar backend remoto em produção)
+infra/terraform.tfstate
+infra/terraform.tfstate.*
+
+# Arquivos temporários CLI
+cli/temp_*.json
+
+# Data samples (2.9 GB — dados SAP brutos, ficam apenas no S3)
+data/samples/

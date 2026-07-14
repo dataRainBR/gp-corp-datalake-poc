@@ -1,0 +1,28 @@
+name: 'gpcorp_quality'
+version: '1.0.0'
+config-version: 2
+
+profile: 'gpcorp_quality'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Persiste registros que falham nos testes (auditoria histórica)
+# Todos os test failures (Silver + Gold) → gpcorp_silver_gold_dbt_test_audit
+tests:
+  +store_failures: true
+  +schema: gold_dbt_test_audit
+  +severity: warn  # warn não bloqueia pipeline; error bloqueia
+
+# Elementary: observabilidade de qualidade (histórico de runs, anomalias)
+# Tabelas persistidas em gpcorp_silver.elementary
+models:
+  elementary:
+    +schema: elementary

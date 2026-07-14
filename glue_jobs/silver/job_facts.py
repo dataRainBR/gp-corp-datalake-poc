@@ -12,7 +12,8 @@ Volumes: Invoices ~8GB, Orders ~10GB (full load) — auto-scaling escala workers
 """
 import sys
 from awsglue.utils import getResolvedOptions
-from pyspark.sql.functions import col, to_date, explode, coalesce, lit
+from pyspark.sql.functions import col, to_date, explode, coalesce, lit, expr
+from pyspark.sql.types import ArrayType, StructType
 
 from config import ENTITIES, CATALOG_DATABASE_SILVER
 from utils import (
@@ -22,6 +23,40 @@ from utils import (
 from iceberg_writer import write_iceberg_merge
 
 
+def _extract_additional_expenses(df):
+    """
+    Calcula o total de despesas adicionais do cabeçalho da NF
+    (DocumentAdditionalExpenses[].LineTotal — frete e outras despesas
+    cobradas separadamente das linhas de item).
+
+    Necessário para reconciliação fiscal:
+    DocTotal ≈ SUM(LineTotal) + VatSum + DocumentAdditionalExpenses
+
+    Sem esse campo, ~5-8% das NFs (as que têm frete no cabeçalho) apareciam
+    como divergência na reconciliação Silver, mesmo estando corretas.
+    """
+    if "DocumentAdditionalExpenses" not in df.columns:
+        return df.withColumn("DocumentAdditionalExpenses", lit(0.0))
+
+    field_type = df.schema["DocumentAdditionalExpenses"].dataType
+    has_linetotal = (
+        isinstance(field_type, ArrayType)
+        and isinstance(field_type.elementType, StructType)
+        and "LineTotal" in field_type.elementType.fieldNames()
+    )
+    if not has_linetotal:
+        # Schema inferido sem despesas (ex.: todos os docs do arquivo sem esse campo)
+        return df.withColumn("DocumentAdditionalExpenses", lit(0.0))
+
+    return df.withColumn(
+        "DocumentAdditionalExpenses",
+        expr(
+            "coalesce(aggregate(DocumentAdditionalExpenses, cast(0.0 as double), "
+            "(acc, x) -> acc + coalesce(x.LineTotal, cast(0.0 as double))), cast(0.0 as double))"
+        )
+    )
+
+
 def transform_invoices(spark, cfg, load_type="all", load_date=None):
     """
     Invoices (OINV + INV1 via Service Layer).
@@ -29,6 +64,10 @@ def transform_invoices(spark, cfg, load_type="all", load_date=None):
     PK final: DocEntry + LineNum
     """
     df = read_bronze_json(spark, cfg["bronze_path"], load_type, load_date)
+
+    # Despesas adicionais do cabeçalho (frete) — calculado antes do explode
+    # das linhas, pois é um valor agregado do documento (não por linha).
+    df = _extract_additional_expenses(df)
 
     # Explode DocumentLines
     df_exploded = df.select(
@@ -58,7 +97,9 @@ def transform_invoices(spark, cfg, load_type="all", load_date=None):
         col("Comments").cast("string"),
         col("Reference1").cast("string"),
         col("BPL_IDAssignedToInvoice").cast("int").alias("BranchId"),
+        col("BPLName").cast("string").alias("NomeFilial"),
         col("NumberOfInstallments").cast("int"),
+        col("DocumentAdditionalExpenses").cast("double"),
         col("_source_file"),
         # Lines
         explode(col("DocumentLines")).alias("line"),
@@ -72,7 +113,8 @@ def transform_invoices(spark, cfg, load_type="all", load_date=None):
         "DiscountPercent", "DocCurrency", "DocRate", "SalesPersonCode",
         "DocumentStatus", "Cancelled", "PaymentGroupCode",
         "TransportationCode", "Series", "CreationDate", "UpdateDate",
-        "Comments", "Reference1", "BranchId", "NumberOfInstallments", "_source_file",
+        "Comments", "Reference1", "BranchId", "NomeFilial", "NumberOfInstallments",
+        "DocumentAdditionalExpenses", "_source_file",
         # Line
         col("line.LineNum").cast("int").alias("LineNum"),
         col("line.ItemCode").cast("string").alias("ItemCode"),
@@ -96,6 +138,7 @@ def transform_invoices(spark, cfg, load_type="all", load_date=None):
         col("line.LineStatus").cast("string").alias("LineStatus"),
         col("line.FreeOfChargeBP").cast("string").alias("FreeOfChargeBP"),
         col("line.GrossBuyPrice").cast("double").alias("GrossBuyPrice"),
+        col("line.GrossTotal").cast("double").alias("ValorTotalLinha"),
         col("line.ActualDeliveryDate").cast("string").alias("ActualDeliveryDate"),
     )
 

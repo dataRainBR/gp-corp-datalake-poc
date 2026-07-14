@@ -9,6 +9,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.0"
+    }
   }
 }
 
@@ -115,33 +119,29 @@ resource "aws_glue_job" "silver_facts" {
   }
 }
 
-# --- Glue Job: Quality Checks ---
+# --- Glue Job: Silver Quality Checks (dbt tests via Athena) ---
+# Python Shell: ~$0.01/run (1/16 DPU × ~5 min) + Athena scan (~$0.05)
+# vs Spark anterior: ~$1.10/run (3 G.1X × 50 min)
 
 resource "aws_glue_job" "silver_quality" {
   name     = "gpcorp-silver-quality-checks"
   role_arn = var.glue_role_arn
 
-  glue_version      = "4.0"
-  worker_type       = "G.1X"
-  number_of_workers = 2
-  timeout           = 30
-  max_retries       = 0
-
   command {
-    name            = "glueetl"
-    script_location = "s3://${var.s3_bucket}/${var.glue_scripts_prefix}/quality_checks.py"
-    python_version  = "3"
+    name            = "pythonshell"
+    script_location = "s3://${var.s3_bucket}/glue-scripts/dbt/run_dbt_tests.py"
+    python_version  = "3.9"
   }
 
+  max_capacity = 0.0625  # 1/16 DPU — mínimo para Python Shell
+  timeout      = 30
+  max_retries  = 1
+
   default_arguments = {
-    "--enable-auto-scaling"                = "true"
-    "--enable-continuous-cloudwatch-log"    = "false"
-    "--enable-metrics"                     = "true"
-    "--datalake-formats"                   = "iceberg"
-    "--conf"                               = "spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
-    "--extra-py-files"                     = "s3://${var.s3_bucket}/${var.glue_scripts_prefix}/config.py,s3://${var.s3_bucket}/${var.glue_scripts_prefix}/utils.py,s3://${var.s3_bucket}/${var.glue_scripts_prefix}/iceberg_writer.py"
-    "--TempDir"                            = "s3://${var.s3_bucket}/glue-temp/"
-    "--job-bookmark-option"                = "job-bookmark-disable"
+    "--additional-python-modules" = "dbt-athena-community==1.8.*,elementary-data==0.15.*"
+    "--dbt_project_s3"           = "s3://${var.s3_bucket}/dbt/gpcorp_quality/"
+    "--test_selector"            = "source:gpcorp_silver+"
+    "--TempDir"                  = "s3://${var.s3_bucket}/glue-temp/"
   }
 
   tags = {
@@ -154,19 +154,19 @@ resource "aws_glue_job" "silver_quality" {
 # --- Glue Workflow (orquestração sequencial) ---
 
 resource "aws_glue_workflow" "silver_pipeline" {
-  name        = "gpcorp-silver-pipeline"
-  description = "Pipeline Bronze → Silver: Dimensões → Fatos → Quality Checks"
+  name        = "gpcorp-pipeline"
+  description = "Pipeline completo: Silver (Dims → Facts → QC) → Gold (Dashboards → Features/Estoque → QC)"
 
   tags = {
     Project = "gpcorp-datalake"
   }
 }
 
-# Trigger: Start (schedule diário 02:00 UTC = 23:00 BRT)
+# Trigger: Start — DESATIVADO (orquestração migrou para Step Functions)
+# Mantido como ON_DEMAND para execuções manuais de teste
 resource "aws_glue_trigger" "silver_start" {
-  name          = "gpcorp-silver-start-daily"
-  type          = "SCHEDULED"
-  schedule      = "cron(0 2 * * ? *)"
+  name          = "gpcorp-silver-start-on-demand"
+  type          = "ON_DEMAND"
   workflow_name = aws_glue_workflow.silver_pipeline.name
 
   actions {

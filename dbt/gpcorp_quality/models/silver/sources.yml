@@ -1,0 +1,42 @@
+version: 2
+
+sources:
+  - name: gpcorp_silver
+    description: "Camada Silver — tabelas Iceberg escritas pelo pipeline PySpark/Glue"
+    database: awsdatacatalog
+    schema: gpcorp_silver
+
+    # Freshness: monitorado via CloudWatch alarm (gpcorp-pipeline-not-executed)
+    # Desabilitado aqui para não gerar falsos positivos nos testes de qualidade
+    # quando apenas facts são reprocessados sem dimensions.
+    # freshness:
+    #   warn_after: {count: 26, period: hour}
+    #   error_after: {count: 72, period: hour}
+    # loaded_at_field: _silver_loaded_at
+
+    tables:
+      # ─────────────── DIMENSÕES ───────────────
+      - name: business_partners
+        description: "Clientes/fornecedores (OCRD) — SCD2"
+
+      - name: items
+        description: "Produtos (OITM) — SCD2"
+
+      - name: sales_persons
+        description: "Vendedores (OSLP) — SCD2"
+
+      - name: item_groups
+        description: "Grupos de produto (OITB)"
+
+      # ─────────────── FATOS ───────────────
+      - name: quotations
+        description: "Cotações (OQUT+QUT1) — base CU-02 win-rate"
+
+      - name: invoices
+        description: "Notas fiscais (OINV+INV1) — fato principal"
+
+      - name: orders
+        description: "Pedidos (ORDR+RDR1)"
+
+      - name: inventory_gen_entries
+        description: "Entradas de estoque (OIGN)"

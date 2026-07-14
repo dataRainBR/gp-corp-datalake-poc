@@ -1,0 +1,26 @@
+# =============================================================================
+# GP Corp Datalake POC — dependências Python
+# =============================================================================
+# PySpark (glue_jobs/silver, glue_jobs/gold) e Glue Python Shell (dbt/run_dbt_tests.py)
+# rodam nativamente no ambiente Glue, que já provisiona boto3/pyspark/awsglue.
+# Este arquivo serve para: desenvolvimento local, debug_pandas.py, testes,
+# e para reproduzir o --additional-python-modules configurado nos jobs Python Shell.
+
+# --- AWS SDK (usado em Lambdas Bronze, scripts CLI e Glue Python Shell) ---
+boto3==1.43.32
+
+# --- Lambdas de ingestão Bronze (glue_jobs/bronze/*/lambda_function.py) ---
+urllib3==2.7.0
+
+# --- Debug local da Silver sem Spark (glue_jobs/silver/debug_pandas.py) ---
+pandas==3.0.3
+pyarrow==24.0.0
+
+# --- Quality checks via dbt/Athena (dbt/run_dbt_tests.py) ---
+# Mesmas versões usadas no --additional-python-modules dos jobs Glue Python Shell
+# (glue_jobs/silver/quality_checks Python Shell, glue_jobs/gold dbt job)
+dbt-athena-community==1.8.*
+elementary-data==0.15.*
+
+# --- PySpark (apenas para desenvolvimento/lint local — Glue já provisiona) ---
+pyspark==3.4.1

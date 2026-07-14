@@ -1,0 +1,42 @@
+version: 2
+
+sources:
+  - name: gpcorp_gold_vendas
+    description: "Gold — Domínio Vendas"
+    database: awsdatacatalog
+    schema: gpcorp_gold_vendas
+    tables:
+      - name: vendas_detalhada
+        description: "Grão linha de NF — drill-down dashboards"
+      - name: faturamento_mensal
+        description: "Faturamento agregado por mês/vendedor/cliente/produto/filial"
+      - name: ranking_vendedores
+        description: "Ranking de vendedores por período"
+      - name: vendas_por_produto
+        description: "Vendas agregadas por item/grupo"
+
+  - name: gpcorp_gold_cotacoes
+    description: "Gold — Domínio Cotações"
+    database: awsdatacatalog
+    schema: gpcorp_gold_cotacoes
+    tables:
+      - name: taxa_conversao
+        description: "Taxa de conversão cotação→pedido"
+      - name: features_predicao_conversao
+        description: "Features ML para predição de conversão"
+
+  - name: gpcorp_gold_cadastros
+    description: "Gold — Domínio Cadastros"
+    database: awsdatacatalog
+    schema: gpcorp_gold_cadastros
+    tables:
+      - name: analise_credito
+        description: "Features de crédito extraídas do FreeText"
+
+  - name: gpcorp_gold_estoque
+    description: "Gold — Domínio Estoque"
+    database: awsdatacatalog
+    schema: gpcorp_gold_estoque
+    tables:
+      - name: movimentacao_estoque
+        description: "Movimentação de estoque por item/depósito/mês"

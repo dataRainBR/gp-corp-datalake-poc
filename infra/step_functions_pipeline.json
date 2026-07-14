@@ -1,0 +1,540 @@
+{
+  "Comment": "GP Corp Datalake — Pipeline completo: Bronze (API) → Crawler → Silver → Gold → Quality",
+  "StartAt": "Extracao Bronze",
+  "QueryLanguage": "JSONata",
+  "States": {
+    "Extracao Bronze": {
+      "Type": "Parallel",
+      "Comment": "Extração paralela de todas as entidades SAP B1 via API",
+      "Branches": [
+        {
+          "StartAt": "gp_corp_business_partner_api_ingestion",
+          "States": {
+            "gp_corp_business_partner_api_ingestion": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Output": "{% $states.result.Payload %}",
+              "Arguments": {
+                "Payload": "{% $states.input %}",
+                "FunctionName": "arn:aws:lambda:us-east-1:892748149777:function:gp_corp_business_partner_api_ingestion:$LATEST"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 600,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "gp_corp_inventory_gen_entries_api_ingestion",
+          "States": {
+            "gp_corp_inventory_gen_entries_api_ingestion": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Output": "{% $states.result.Payload %}",
+              "Arguments": {
+                "Payload": "{% $states.input %}",
+                "FunctionName": "arn:aws:lambda:us-east-1:892748149777:function:gp_corp_inventory_gen_entries_api_ingestion:$LATEST"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 630,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "gp_corp_invoices_api_ingestion",
+          "States": {
+            "gp_corp_invoices_api_ingestion": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Output": "{% $states.result.Payload %}",
+              "Arguments": {
+                "Payload": "{% $states.input %}",
+                "FunctionName": "arn:aws:lambda:us-east-1:892748149777:function:gp_corp_invoices_api_ingestion:$LATEST"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 630,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "gp_corp_item_groups_api_ingestion",
+          "States": {
+            "gp_corp_item_groups_api_ingestion": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Output": "{% $states.result.Payload %}",
+              "Arguments": {
+                "Payload": "{% $states.input %}",
+                "FunctionName": "arn:aws:lambda:us-east-1:892748149777:function:gp_corp_item_groups_api_ingestion:$LATEST"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 630,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "gp_corp_items_api_ingestion",
+          "States": {
+            "gp_corp_items_api_ingestion": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Output": "{% $states.result.Payload %}",
+              "Arguments": {
+                "Payload": "{% $states.input %}",
+                "FunctionName": "arn:aws:lambda:us-east-1:892748149777:function:gp_corp_items_api_ingestion:$LATEST"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 630,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "gp_corp_orders_api_ingestion",
+          "States": {
+            "gp_corp_orders_api_ingestion": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Output": "{% $states.result.Payload %}",
+              "Arguments": {
+                "Payload": "{% $states.input %}",
+                "FunctionName": "arn:aws:lambda:us-east-1:892748149777:function:gp_corp_orders_api_ingestion:$LATEST"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 630,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "gp_corp_quotations_api_ingestion",
+          "States": {
+            "gp_corp_quotations_api_ingestion": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Output": "{% $states.result.Payload %}",
+              "Arguments": {
+                "Payload": "{% $states.input %}",
+                "FunctionName": "arn:aws:lambda:us-east-1:892748149777:function:gp_corp_quotations_api_ingestion:$LATEST"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 630,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "gp_corp_sales_persons_api_ingestion",
+          "States": {
+            "gp_corp_sales_persons_api_ingestion": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Output": "{% $states.result.Payload %}",
+              "Arguments": {
+                "Payload": "{% $states.input %}",
+                "FunctionName": "arn:aws:lambda:us-east-1:892748149777:function:gp_corp_sales_persons_api_ingestion:$LATEST"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 630,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "Crawler Bronze",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Notificar Falha Extracao"
+        }
+      ]
+    },
+
+    "Crawler Bronze": {
+      "Type": "Task",
+      "Comment": "Atualiza catálogo Bronze para consultas ad-hoc Athena",
+      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+      "Arguments": {
+        "Name": "gpcorp-bronze-crawler"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["Glue.CrawlerRunningException"],
+          "IntervalSeconds": 60,
+          "MaxAttempts": 3,
+          "BackoffRate": 1
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Silver Dimensions",
+          "Comment": "Crawler é opcional — se falhar, Silver segue"
+        }
+      ],
+      "Next": "Aguardar Crawler"
+    },
+
+    "Aguardar Crawler": {
+      "Type": "Wait",
+      "Seconds": 120,
+      "Comment": "Crawler Bronze leva ~2 min",
+      "Next": "Silver Dimensions"
+    },
+
+    "Silver Dimensions": {
+      "Type": "Task",
+      "Comment": "SCD2: BusinessPartners, Items, ItemGroups, SalesPersons",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "gpcorp-silver-dimensions",
+        "Arguments": {
+          "--load_type": "incremental",
+          "--load_date.$": "$$.Execution.StartTime"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 60,
+          "MaxAttempts": 1,
+          "BackoffRate": 1
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Notificar Falha Silver"
+        }
+      ],
+      "Next": "Silver Facts"
+    },
+
+    "Silver Facts": {
+      "Type": "Task",
+      "Comment": "Invoices, Orders, Quotations, InventoryGenEntries",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "gpcorp-silver-facts",
+        "Arguments": {
+          "--load_type": "incremental",
+          "--load_date.$": "$$.Execution.StartTime"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 60,
+          "MaxAttempts": 1,
+          "BackoffRate": 1
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Notificar Falha Silver"
+        }
+      ],
+      "Next": "Silver Quality"
+    },
+
+    "Silver Quality": {
+      "Type": "Task",
+      "Comment": "dbt tests camada Silver (Athena — Python Shell)",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "gpcorp-silver-quality-checks"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 1,
+          "BackoffRate": 1
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Gold Dashboards",
+          "Comment": "Quality warn não bloqueia Gold (severity=warn no dbt)"
+        }
+      ],
+      "Next": "Gold Dashboards"
+    },
+
+    "Gold Dashboards": {
+      "Type": "Task",
+      "Comment": "Vendas detalhada, faturamento, ranking, cotações",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "gpcorp-gold-dashboards"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 60,
+          "MaxAttempts": 1,
+          "BackoffRate": 1
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Notificar Falha Gold"
+        }
+      ],
+      "Next": "Gold Paralelo"
+    },
+
+    "Gold Paralelo": {
+      "Type": "Parallel",
+      "Comment": "Features, Estoque, Credit e Cadastros rodam em paralelo após Dashboards",
+      "Branches": [
+        {
+          "StartAt": "Gold Features",
+          "States": {
+            "Gold Features": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Arguments": {
+                "JobName": "gpcorp-gold-features"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "IntervalSeconds": 60,
+                  "MaxAttempts": 1,
+                  "BackoffRate": 1
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Gold Estoque",
+          "States": {
+            "Gold Estoque": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Arguments": {
+                "JobName": "gpcorp-gold-estoque"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "IntervalSeconds": 60,
+                  "MaxAttempts": 1,
+                  "BackoffRate": 1
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Gold Credit Features",
+          "States": {
+            "Gold Credit Features": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Arguments": {
+                "JobName": "gpcorp-gold-credit-features"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "IntervalSeconds": 60,
+                  "MaxAttempts": 1,
+                  "BackoffRate": 1
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Gold Cadastros",
+          "States": {
+            "Gold Cadastros": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Arguments": {
+                "JobName": "gpcorp-gold-cadastros"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "IntervalSeconds": 60,
+                  "MaxAttempts": 1,
+                  "BackoffRate": 1
+                }
+              ],
+              "End": true
+            }
+          }
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Notificar Falha Gold"
+        }
+      ],
+      "Next": "Gold Quality"
+    },
+
+    "Gold Quality": {
+      "Type": "Task",
+      "Comment": "dbt tests camada Gold (Athena — Python Shell)",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Arguments": {
+        "JobName": "gpcorp-gold-quality-checks"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Notificar Sucesso",
+          "Comment": "Quality Gold é informativo — não bloqueia"
+        }
+      ],
+      "Next": "Coletar Metricas"
+    },
+
+    "Coletar Metricas": {
+      "Type": "Task",
+      "Comment": "Lambda coleta duração de cada job e grava em S3 (Athena)",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "arn:aws:lambda:us-east-1:892748149777:function:gpcorp-collect-metrics",
+        "Payload": {}
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 1,
+          "BackoffRate": 1
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Notificar Sucesso",
+          "Comment": "Coleta de métricas é best-effort — não bloqueia"
+        }
+      ],
+      "Next": "Notificar Sucesso"
+    },
+
+    "Notificar Sucesso": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Arguments": {
+        "TopicArn": "arn:aws:sns:us-east-1:892748149777:gpcorp-glue-pipeline-alerts",
+        "Subject": "[GPCORP] Pipeline concluido com sucesso",
+        "Message": "Pipeline completo executado com sucesso (Bronze → Silver → Gold → Quality)."
+      },
+      "End": true
+    },
+
+    "Notificar Falha Extracao": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Arguments": {
+        "TopicArn": "arn:aws:sns:us-east-1:892748149777:gpcorp-glue-pipeline-alerts",
+        "Subject": "[GPCORP] FALHA na extracao Bronze",
+        "Message": "Uma ou mais Lambdas de extracao falharam. Verificar Step Functions e CloudWatch Logs."
+      },
+      "Next": "Pipeline Falhou"
+    },
+
+    "Notificar Falha Silver": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Arguments": {
+        "TopicArn": "arn:aws:sns:us-east-1:892748149777:gpcorp-glue-pipeline-alerts",
+        "Subject": "[GPCORP] FALHA no pipeline Silver",
+        "Message": "Job Silver falhou. Verificar Glue console e CloudWatch Logs."
+      },
+      "Next": "Pipeline Falhou"
+    },
+
+    "Notificar Falha Gold": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Arguments": {
+        "TopicArn": "arn:aws:sns:us-east-1:892748149777:gpcorp-glue-pipeline-alerts",
+        "Subject": "[GPCORP] FALHA no pipeline Gold",
+        "Message": "Job Gold falhou. Verificar Glue console e CloudWatch Logs."
+      },
+      "Next": "Pipeline Falhou"
+    },
+
+    "Pipeline Falhou": {
+      "Type": "Fail",
+      "Error": "PipelineExecutionFailed",
+      "Cause": "Uma ou mais etapas do pipeline falharam. Ver notificacao SNS."
+    }
+  }
+}

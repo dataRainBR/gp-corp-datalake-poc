@@ -78,7 +78,23 @@ def _merge_into(spark: SparkSession, df: DataFrame, full_table: str, primary_key
     """
     Executa MERGE INTO: atualiza existentes, insere novos.
     Usa Spark SQL com Iceberg extensions.
+    Schema evolution: adiciona colunas novas automaticamente.
     """
+    # Schema evolution: adiciona colunas que existem no DF mas não na tabela
+    existing_cols = set(spark.table(full_table).columns)
+    new_cols = [f for f in df.schema.fields if f.name not in existing_cols]
+    if new_cols:
+        for field in new_cols:
+            col_type = field.dataType.simpleString()
+            try:
+                spark.sql(f"ALTER TABLE {full_table} ADD COLUMN `{field.name}` {col_type}")
+                print(f"[SCHEMA] Coluna `{field.name}` ({col_type}) adicionada em {full_table}")
+            except Exception as e:
+                if "already exists" in str(e):
+                    pass
+                else:
+                    print(f"[WARN] ALTER TABLE falhou para {field.name}: {e}")
+
     temp_view = f"_incoming_{full_table.split('.')[-1]}"
     df.createOrReplaceTempView(temp_view)
 
