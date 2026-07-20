@@ -422,6 +422,92 @@ WHERE cancelled != 'tYES';
 
 ---
 
+## 10. Estrutura do repositório
+
+```
+gp-corp-datalake-poc/
+├── glue_jobs/
+│   ├── bronze/
+│   │   ├── ingestion/              # 8 Lambdas de extração SAP B1 → S3
+│   │   │   ├── gp_corp_invoices_api_ingestion/
+│   │   │   ├── gp_corp_orders_api_ingestion/
+│   │   │   ├── gp_corp_quotations_api_ingestion/
+│   │   │   ├── gp_corp_business_partner_api_ingestion/
+│   │   │   ├── gp_corp_items_api_ingestion/
+│   │   │   ├── gp_corp_item_groups_api_ingestion/
+│   │   │   ├── gp_corp_sales_persons_api_ingestion/
+│   │   │   └── gp_corp_inventory_gen_entries_api_ingestion/
+│   │   └── utils/                  # Lambdas utilitárias
+│   │       ├── gp_corp_audit_json_to_csv/
+│   │       ├── gp_corp_audit_count_records/
+│   │       ├── gp_corp_lambda_audit_count_records/
+│   │       ├── lambda_split_large_json/
+│   │       └── gpcorp-extraction-retry/
+│   ├── silver/                     # Glue Jobs Bronze → Silver (PySpark + Iceberg)
+│   │   ├── job_dimensions.py       # SCD2: BP, Items, SalesPersons, ItemGroups
+│   │   ├── job_facts.py            # MERGE: Invoices, Orders, Quotations, Inventory
+│   │   ├── iceberg_writer.py       # Escrita Iceberg com schema evolution
+│   │   ├── scd2.py                 # Lógica SCD Tipo 2
+│   │   ├── utils.py                # Helpers (leitura Bronze, dedup, metadata)
+│   │   ├── config.py               # Configuração centralizada de entidades
+│   │   ├── compaction.py           # Compaction semanal (rewrite_data_files)
+│   │   ├── lambda_metrics.py       # Lambda coleta métricas de execução
+│   │   └── debug_pandas.py         # Debug local sem Spark
+│   └── gold/                       # Glue Jobs Silver → Gold (PySpark + Iceberg)
+│       ├── job_dashboards.py       # vendas_detalhada, faturamento, ranking, produto
+│       ├── job_features_predicao_conversao.py
+│       ├── job_cadastros.py        # perfil_cliente, catalogo, cobertura_vendedor
+│       ├── job_estoque.py          # movimentacao_estoque
+│       ├── job_credit_features.py  # analise_credito (NLP FreeText)
+│       └── config.py               # Databases Gold + paths
+├── dbt/
+│   ├── run_dbt_tests.py            # Glue Python Shell: executa dbt tests
+│   └── gpcorp_quality/             # Projeto dbt (quality checks)
+│       ├── models/                 # sources.yml (Silver + Gold)
+│       ├── tests/silver/           # 28 testes SQL customizados
+│       ├── tests/gold/             # 14 testes SQL customizados
+│       ├── dbt_project.yml
+│       ├── packages.yml            # dbt_utils + elementary
+│       └── profiles.yml            # Athena adapter config
+├── infra/                          # Terraform (IaC)
+│   ├── iam_roles_terraform.tf      # 3 roles: Glue, Lambda, Analyst
+│   ├── lake_formation_terraform.tf # RBAC (grants por database/tabela)
+│   ├── glue_silver_terraform.tf    # Jobs Silver + Workflow
+│   ├── glue_gold_terraform.tf      # Jobs Gold
+│   ├── glue_bronze_crawler.tf      # Crawler Bronze
+│   ├── step_functions_terraform.tf # Step Functions orquestrador
+│   ├── step_functions_pipeline.json # ASL definition
+│   ├── lambda_terraform.tf         # Lambda trigger
+│   ├── retry_queue_terraform.tf    # SQS retry + DLQ
+│   └── observability_terraform.tf  # 13 alarmes + SNS + Dashboard
+├── cli/                            # Scripts operacionais (PowerShell + JSON)
+│   ├── deploy_infra.ps1            # Deploy Terraform
+│   ├── setup_rbac_safe.ps1         # Aplica grants Lake Formation
+│   ├── check_perms.ps1             # Valida permissões RBAC
+│   └── *.json                      # Políticas IAM, triggers, grants
+├── docs/                           # Documentação
+│   ├── documentacao_tecnica.md     # Doc principal (este README é cópia)
+│   ├── dicionario_dados_gold.md    # Schema de todas as tabelas Gold
+│   ├── arquitetura_quicksight_dashboard.md
+│   ├── inventario_recursos_aws.md
+│   └── ...
+├── sagemaker/                      # Módulo ML/Forecast (SageMaker)
+│   ├── eda/                        # Análise exploratória
+│   ├── processing/                 # Preparação de dados (dataset_builder, preprocessing)
+│   ├── training/                   # Treinamento e avaliação do modelo
+│   ├── inference/                  # Predição (predict.py)
+│   ├── pipelines/                  # Pipelines SageMaker (full, prediction)
+│   ├── utils/                      # Utilitários (logs)
+│   ├── scripts/                    # Scripts de entrada (CLI)
+│   └── notebooks/                  # Notebooks Jupyter (EDA, pipelines, testes)
+├── data/
+│   └── output/                     # Resultados de testes locais (gitignore)
+├── requirements.txt                # Dependências Python
+└── .gitignore
+```
+
+---
+
 
 ## 11. Pendências para produção
 
