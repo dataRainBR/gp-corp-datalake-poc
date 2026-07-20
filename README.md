@@ -491,6 +491,15 @@ gp-corp-datalake-poc/
 │   ├── arquitetura_quicksight_dashboard.md
 │   ├── inventario_recursos_aws.md
 │   └── ...
+├── sagemaker/                      # Módulo ML/Forecast (SageMaker)
+│   ├── eda/                        # Análise exploratória
+│   ├── processing/                 # Preparação de dados (dataset_builder, preprocessing)
+│   ├── training/                   # Treinamento e avaliação do modelo
+│   ├── inference/                  # Predição (predict.py)
+│   ├── pipelines/                  # Pipelines SageMaker (full, prediction)
+│   ├── utils/                      # Utilitários (logs)
+│   ├── scripts/                    # Scripts de entrada (CLI)
+│   └── notebooks/                  # Notebooks Jupyter (EDA, pipelines, testes)
 ├── data/
 │   └── output/                     # Resultados de testes locais (gitignore)
 ├── requirements.txt                # Dependências Python
